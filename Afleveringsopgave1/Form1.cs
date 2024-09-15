@@ -10,7 +10,7 @@ namespace Afleveringsopgave1
     {
         private int _arrIndex;
         private string[] _namesArr;
-        private List<string> _namesList;
+        private SortedDictionary<string, string> _namesDict;
 
         public Form1()
         {
@@ -19,102 +19,105 @@ namespace Afleveringsopgave1
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            // Initialize array and list objects and sort in alphabetical order.
+            // Initialize array and dictionary objects and sort in alphabetical order.
             _namesArr = new string[4] {"Labrador", "Poodle", "Beagle", "Golden Retriever"};
             _arrIndex = _namesArr.Length;
             Array.Sort(_namesArr);
-            listBoxNamesArr.DataSource = _namesArr;
 
-            _namesList = new List<string>() { "Labrador", "Poodle", "Beagle", "Golden Retriever" };
-            _namesList.Sort();
-            listBoxNamesList.DataSource = _namesList;
+            _namesDict = new SortedDictionary<string, string>() { 
+                { "Labrador", "Great family dog" },
+                { "Poodle", "Fluffy, curly fur" },
+                { "Beagle" , "Good breed for hunters"},
+                { "Golden Retriever", "Loves food very much" }, 
+            };
+
+            // Initialize ListView objects
+            listViewArray.View = View.Details;
+            listViewArray.Columns.Add("Position", 50);
+            listViewArray.Columns.Add("Name", 150);
+            listViewArray.FullRowSelect = true;
+
+            listViewDict.View = View.Details;
+            listViewDict.Columns.Add("Name", 125);
+            listViewDict.Columns.Add("Information", -2);
+            listViewDict.FullRowSelect = true;
+
+            LoadArrayItems();
+            LoadDictItems();
+            
         }
 
-        private void UpdateListBoxArr()
+        // Add and remove items from list.
+        #region Item logic
+
+        private void LoadArrayItems()
         {
-            listBoxNamesArr.DataSource = null;
-            listBoxNamesArr.DataSource = _namesArr;
+            listViewArray.Items.Clear();
+
+            for (int i = 0; i < _namesArr.Length; i++)
+            {
+                ListViewItem item = new ListViewItem($"Pos:{i + 1}");
+                item.SubItems.Add(_namesArr[i]);
+
+                listViewArray.Items.Add(item);
+            }
         }
 
-        private void UpdateListBoxList()
+        private void LoadDictItems()
         {
-            listBoxNamesList.DataSource = null;
-            listBoxNamesList.DataSource = _namesList;
+            listViewDict.Items.Clear();
+
+            int iter = 1;
+            foreach (var kvp in _namesDict)
+            {
+                ListViewItem item = new ListViewItem(kvp.Key);
+                item.SubItems.Add(kvp.Value);
+
+                listViewDict.Items.Add(item);
+                iter++;
+            }
         }
 
- 
-        /*******************************************************************
-         *  Input validation on textboxes.
-         * ****************************************************************/
-        private void txtBoxNameInput_TextChanged(object sender, EventArgs e)
-        {
-            TextBox txtBox = sender as TextBox;
-            txtBox.Font = new Font(txtBox.Font, FontStyle.Regular);
-
-            if((txtBox.Text != "") && Regex.IsMatch(txtBox.Text, "^[A-Za-z]*$"))
-                btnAddName.Enabled = true;
-            else btnAddName.Enabled = false;
-        }
-
-        private void txtBoxPositionInput_TextChanged(object sender, EventArgs e)
-        {
-            TextBox txtBox = sender as TextBox;
-            txtBox.Font = new Font(txtBox.Font, FontStyle.Regular);
-
-            if (Regex.IsMatch(txtBox.Text, "^[0-9]*$"))
-                if (txtBox.Text != "")
-                {
-                    int input = Convert.ToInt32(txtBox.Text);
-
-                    if((0 < input) && (input <= _arrIndex))
-                        btnDeletePos.Enabled = true;
-                }    
-                else btnDeletePos.Enabled = false;
-        }
-
-        /******************************************************
-         *  Add and remove items from list.
-         * ***************************************************/
         private void btnAddName_Click(object sender, EventArgs e)
         {
             // Increase array size if index reaches the end.
             if (_arrIndex == _namesArr.Length)
                 Array.Resize(ref _namesArr, _namesArr.Length + 1);
 
+            // Add item to array at current index
             _namesArr[_arrIndex] = txtBoxNameInput.Text;
             Array.Sort(_namesArr);
             _arrIndex += 1;
-            UpdateListBoxArr();
+            LoadArrayItems();
 
-            _namesList.Add(txtBoxNameInput.Text);
-            _namesList.Sort();
-            UpdateListBoxList();
+            _namesDict.Add(txtBoxNameInput.Text, "Default desciption");
+            LoadDictItems();
 
             txtBoxNameInput.Clear();
         }
 
         private void btnDeletePos_Click(object sender, EventArgs e)
         {
-            // Converts input position to 0-index
-            int index = Convert.ToInt32(txtBoxPositionInput.Text) - 1;
-            
+            // Convert input position to 0-index
+            int index = Convert.ToInt32(txtBoxPositionInput.Text) - 1; 
             DeleteFromArray(index);
-
-            _namesList.RemoveAt(index);
-            UpdateListBoxList();
 
             txtBoxPositionInput.Clear();    
         }
 
         private void btnDeleteFromArray_Click(object sender, EventArgs e)
         {
-            DeleteFromArray(listBoxNamesArr.SelectedIndex);
+            if(listViewArray.SelectedIndices.Count > 0)
+                DeleteFromArray(listViewArray.SelectedIndices[0]);
         }
 
-        private void btnDeleteFromList_Click(object sender, EventArgs e)
+        private void btnDeleteFromDict_Click(object sender, EventArgs e)
         {
-            _namesList.RemoveAt(listBoxNamesList.SelectedIndex);
-            UpdateListBoxList();
+            if (listViewDict.SelectedIndices.Count > 0)
+            {
+                _namesDict.Remove(listViewDict.SelectedItems[0].Text);
+                LoadDictItems();
+            }      
         }
 
         // Shift items down the array starting at index of deleted item.
@@ -135,28 +138,90 @@ namespace Afleveringsopgave1
 
             Array.Resize(ref _namesArr, lastItem);
             _arrIndex -= 1;
-            UpdateListBoxArr();
+            LoadArrayItems();
         }
 
-
-        /********************************************************
-         *  Sort lists alphabetical in descending or ascending order.
-         * *****************************************************/
         private void btnSortOption_Click(object sender, EventArgs e)
         {
-            Array.Reverse(_namesArr);
-            _namesList.Reverse();
-            UpdateListBoxArr();
-            UpdateListBoxList();
 
-            // Switch the text on sort option button
-            btnSortOption.Text = btnSortOption.Text == "Sort descending" ? "Sort ascending" : "Sort descending";
+            Array.Reverse(_namesArr);
+            LoadArrayItems() ;
+
+            if (btnSortOption.Text == "Sort ascending")
+            {
+                listViewDict.Sorting = SortOrder.Ascending;
+                btnSortOption.Text = "Sort descending";
+            }
+            else
+            {
+                listViewDict.Sorting = SortOrder.Descending;
+                btnSortOption.Text = "Sort ascending";
+            }
         }
 
+        #endregion
 
-        /***************************************************************************
-         *  Adding a tooltip text label to controls
-         * ************************************************************************/
+        
+        // Input validation on textboxes.
+        #region Input validation
+        private void txtBoxNameInput_TextChanged(object sender, EventArgs e)
+        {
+            TextBox txtBox = sender as TextBox;
+            txtBox.Font = new Font(txtBox.Font, FontStyle.Regular);
+
+            if ((txtBox.Text != ""))
+            {
+                if (Regex.IsMatch(txtBox.Text, "^[ÆØÅæøåa-zA-Z]+( [ÆØÅæøåa-zA-Z]+)*$"))
+                {
+                    btnAddName.Enabled = true;
+                    lblErrorNameInput.Visible = false;
+                }
+                else
+                {
+                    btnAddName.Enabled = false;
+                    lblErrorNameInput.Visible = true;
+                }
+            }
+            else
+            {
+                btnAddName.Enabled = false;
+                lblErrorNameInput.Visible = false;
+            }
+        }
+
+        private void txtBoxPositionInput_TextChanged(object sender, EventArgs e)
+        {
+            TextBox txtBox = sender as TextBox;
+            txtBox.Font = new Font(txtBox.Font, FontStyle.Regular);
+
+            if (txtBox.Text != "")
+            {
+                btnDeletePos.Enabled = false;
+                lblErrorPosInput.Visible = true;
+
+                if (Regex.IsMatch(txtBox.Text, "^[1-9]+([0-9])*$"))
+                {
+                    int input = Convert.ToInt32(txtBox.Text);
+
+                    if ((0 < input) && (input <= _arrIndex))
+                    {
+                        btnDeletePos.Enabled = true;
+                        lblErrorPosInput.Visible = false;
+                    }
+                }
+            }
+            else
+            {
+                btnDeletePos.Enabled = false;
+                lblErrorPosInput.Visible = false;
+            }
+        }
+
+        #endregion
+
+       
+        // Adding a tooltip text label to text input boxes
+        #region Tooltip logic
         private void txtBoxNameInput_MouseLeave(object sender, EventArgs e)
         {
             lblToolTip.Visible = false;
@@ -180,5 +245,7 @@ namespace Afleveringsopgave1
             lblToolTip.Text = "Enter a number corresponding to an item on the list";
             lblToolTip.Location = new Point(txtBoxPositionInput.Left + e.X + 5, txtBoxPositionInput.Top + e.Y + 5);
         }
+
+        #endregion
     }
 }
